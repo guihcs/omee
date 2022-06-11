@@ -1,3 +1,5 @@
+import json
+
 from fastapi import FastAPI
 from tinydb import TinyDB
 from datetime import datetime
@@ -5,6 +7,9 @@ import uuid
 from runner import listen
 import multiprocessing as mp
 import time
+
+with open('settings.json') as f:
+    settings = json.loads(f.read())
 
 app = FastAPI()
 
@@ -28,7 +33,7 @@ async def app_end():
 @app.post('/run_experiment')
 async def run_experiment(body: dict):
     db_lock.acquire()
-    with TinyDB('db.json') as db:
+    with TinyDB(settings['db']) as db:
         events = db.table('events')
         events.insert({'id': str(uuid.uuid4()), 'date': time.time(), 'request': body, 'status': 'waiting'})
     db_lock.release()

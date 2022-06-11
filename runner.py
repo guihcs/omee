@@ -138,7 +138,7 @@ def run_experiment(request, db_lock):
 
         folds.append({'fold': f, 'result': results})
     db_lock.acquire()
-    with TinyDB('db.json') as db:
+    with TinyDB(settings['db']) as db:
         results = db.table('results')
         results.insert(
             {'id': str(uuid.uuid4()), 'folds': folds, 'end': str(datetime.now()), 'request': request['request']})
@@ -158,7 +158,7 @@ def listen(is_running, db_lock):
                 workers.remove(worker)
 
         db_lock.acquire()
-        with TinyDB('db.json') as db:
+        with TinyDB(settings['db']) as db:
             events = db.table('events')
             all_events = events.search(Query().status == 'waiting')
 
