@@ -12,6 +12,10 @@ import multiprocessing as mp
 from rdflib import BNode, Literal, URIRef
 import time
 
+
+with open('settings.json') as f:
+    settings = json.loads(f.read())
+
 def umap(f, t):
     for p in t:
         yield f(*p)
@@ -106,12 +110,10 @@ def rank(results):
     return df.sort_values('F1', ascending=False)
 
 
-
-
 def run_experiment(request, db_lock):
     builder_data = request['request']['builder'].encode('utf-8')
     model_builder = dill.loads(base64.b64decode(builder_data))
-    base = '/home/guilherme/Documents/kg/'
+    base = settings['base']
     train_data = build_sets(base)
 
     folds = []
@@ -138,13 +140,14 @@ def run_experiment(request, db_lock):
     db_lock.acquire()
     with TinyDB('db.json') as db:
         results = db.table('results')
-        results.insert({'id': str(uuid.uuid4()), 'folds': folds, 'end': str(datetime.now()), 'label': request['label'],
-                        'desc': request['desc'], 'misc': request['misc']})
+        results.insert(
+            {'id': str(uuid.uuid4()), 'folds': folds, 'end': str(datetime.now()), 'request': request['request']})
 
         events = db.table('events')
         query = Query()
         events.remove(query.id == request['id'])
     db_lock.release()
+
 
 def listen(is_running, db_lock):
     workers = []
@@ -170,6 +173,3 @@ def listen(is_running, db_lock):
 
         db_lock.release()
         time.sleep(1)
-
-
-
