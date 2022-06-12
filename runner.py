@@ -144,8 +144,7 @@ def run_experiment(request, db_lock):
             {'id': str(uuid.uuid4()), 'folds': folds, 'end': str(datetime.now()), 'request': request['request']})
 
         events = db.table('events')
-        query = Query()
-        events.remove(query.id == request['id'])
+        events.update({'status': 'finish'}, Query().id == request['id'])
     db_lock.release()
 
 

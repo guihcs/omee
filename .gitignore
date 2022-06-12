@@ -2,3 +2,4 @@ venv/
 .idea/
 db.json
 __pycache__/
+settings.json
