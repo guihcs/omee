@@ -12,9 +12,9 @@ import multiprocessing as mp
 from rdflib import BNode, Literal, URIRef
 import time
 
-
 with open('settings.json') as f:
     settings = json.loads(f.read())
+
 
 def umap(f, t):
     for p in t:
@@ -172,3 +172,7 @@ def listen(is_running, db_lock):
 
         db_lock.release()
         time.sleep(1)
+
+    for worker in workers:
+        if worker.is_alive():
+            worker.kill()

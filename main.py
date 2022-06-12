@@ -27,7 +27,6 @@ async def app_start():
 @app.on_event('shutdown')
 async def app_end():
     state.value = 0
-    process.kill()
     pass
 
 
