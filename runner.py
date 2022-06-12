@@ -3,7 +3,7 @@ from rdflib import Graph
 from om.match import aligns, onts, Runner
 import pandas as pd
 import json
-import dill
+import cloudpickle
 import base64
 from tinydb import TinyDB, Query
 from datetime import datetime
@@ -11,6 +11,7 @@ import uuid
 import multiprocessing as mp
 from rdflib import BNode, Literal, URIRef
 import time
+import faulthandler
 
 with open('settings.json') as f:
     settings = json.loads(f.read())
@@ -112,10 +113,10 @@ def rank(results):
 
 def run_experiment(request, db_lock):
     builder_data = request['request']['builder'].encode('utf-8')
-    model_builder = dill.loads(base64.b64decode(builder_data))
+    model_builder = cloudpickle.loads(base64.b64decode(builder_data))
     base = settings['base']
     train_data = build_sets(base)
-
+    faulthandler.enable()
     folds = []
     for f, (train, validation1, validation2, test) in enumerate(train_data):
         datasets = [MatchDataset(r, o1, o2, t_factor=800) for r, o1, o2 in train]
@@ -158,6 +159,7 @@ def run_experiment(request, db_lock):
             events.update({'status': 'finish'}, Query().id == request['id'])
         db_lock.release()
 
+    faulthandler.disable()
 
 def listen(is_running, db_lock):
     workers = []
