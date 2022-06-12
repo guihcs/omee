@@ -154,13 +154,14 @@ def run_experiment(request, db_lock):
         with TinyDB(settings['db']) as db:
             results = db.table('results')
             results.insert(
-                {'id': str(uuid.uuid4()), 'folds': folds, 'end': str(datetime.now()), 'request': request['request']})
+                {'id': str(uuid.uuid4()), 'folds': folds, 'end': str(datetime.now())})
 
             events = db.table('events')
             events.update({'status': 'finish'}, Query().id == request['id'])
         db_lock.release()
 
     faulthandler.disable()
+
 
 def listen(is_running, db_lock):
     workers = []
@@ -190,6 +191,3 @@ def listen(is_running, db_lock):
     for worker in workers:
         if worker.is_alive():
             worker.kill()
-
-
-
