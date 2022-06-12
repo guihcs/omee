@@ -120,7 +120,16 @@ def run_experiment(request, db_lock):
     for f, (train, validation1, validation2, test) in enumerate(train_data):
         datasets = [MatchDataset(r, o1, o2, t_factor=800) for r, o1, o2 in train]
 
-        models = model_builder.build(datasets)
+        try:
+            models = model_builder.build(datasets)
+        except Exception as e:
+            print(e)
+            db_lock.acquire()
+            with TinyDB(settings['db']) as db:
+                events = db.table('events')
+                events.update({'status': 'error'}, Query().id == request['id'])
+            db_lock.release()
+            break
 
         results = []
         sets = [('train', train), ('validation1', validation1), ('validation2', validation2), ('test', test)]
@@ -137,15 +146,17 @@ def run_experiment(request, db_lock):
             results.append((name, r1))
 
         folds.append({'fold': f, 'result': results})
-    db_lock.acquire()
-    with TinyDB(settings['db']) as db:
-        results = db.table('results')
-        results.insert(
-            {'id': str(uuid.uuid4()), 'folds': folds, 'end': str(datetime.now()), 'request': request['request']})
 
-        events = db.table('events')
-        events.update({'status': 'finish'}, Query().id == request['id'])
-    db_lock.release()
+    else:
+        db_lock.acquire()
+        with TinyDB(settings['db']) as db:
+            results = db.table('results')
+            results.insert(
+                {'id': str(uuid.uuid4()), 'folds': folds, 'end': str(datetime.now()), 'request': request['request']})
+
+            events = db.table('events')
+            events.update({'status': 'finish'}, Query().id == request['id'])
+        db_lock.release()
 
 
 def listen(is_running, db_lock):
