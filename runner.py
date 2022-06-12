@@ -12,6 +12,7 @@ import multiprocessing as mp
 from rdflib import BNode, Literal, URIRef
 import time
 import faulthandler
+import pickle
 
 with open('settings.json') as f:
     settings = json.loads(f.read())
@@ -113,7 +114,7 @@ def rank(results):
 
 def run_experiment(request, db_lock):
     builder_data = request['request']['builder'].encode('utf-8')
-    model_builder = cloudpickle.loads(base64.b64decode(builder_data))
+    model_builder = pickle.loads(base64.b64decode(builder_data))()
     base = settings['base']
     train_data = build_sets(base)
     faulthandler.enable()
@@ -140,7 +141,7 @@ def run_experiment(request, db_lock):
 
             for config, model in models:
                 runner = Runner(base + 'conference', base + 'reference', matcher=model)
-                res = runner.run(refs=refs)
+                res = runner.run(parallel=False, refs=refs)
                 res = list(map(lambda y: y.to_json(), res))
                 r1[config['id']] = {'config': config, 'result': res}
 
@@ -189,3 +190,6 @@ def listen(is_running, db_lock):
     for worker in workers:
         if worker.is_alive():
             worker.kill()
+
+
+
